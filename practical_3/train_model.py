@@ -8,6 +8,10 @@ import os
 import tensorflow as tf
 import numpy as np
 
+import cifar10_utils
+from convnet import ConvNet
+import datetime
+
 LEARNING_RATE_DEFAULT = 1e-4
 BATCH_SIZE_DEFAULT = 128
 MAX_STEPS_DEFAULT = 15000
@@ -15,6 +19,7 @@ EVAL_FREQ_DEFAULT = 1000
 CHECKPOINT_FREQ_DEFAULT = 5000
 PRINT_FREQ_DEFAULT = 10
 OPTIMIZER_DEFAULT = 'ADAM'
+X_TEST_BATCH_SIZE = 100;
 
 DATA_DIR_DEFAULT = './cifar10/cifar-10-batches-py'
 LOG_DIR_DEFAULT = './logs/cifar10'
@@ -41,6 +46,8 @@ def train_step(loss):
     ########################
 
     return train_op
+
+FLAGS = None
 
 def train():
     """
@@ -80,11 +87,64 @@ def train():
     ########################
     # PUT YOUR CODE HERE  #
     ########################
-    raise NotImplementedError
+    cifar10 = cifar10_utils.get_cifar10('cifar10/cifar-10-batches-py')
+
+    with tf.name_scope("Model"):
+        convnet = ConvNet()
+
+        x = tf.placeholder("float", (None, 32, 32, 3))
+        y = tf.placeholder("float", (None, 10))
+        avr_acc = tf.placeholder("float", (1))
+        avr_loss = tf.placeholder("float", (1))
+
+        predictions = convnet.inference(x)
+        loss        = convnet.loss(predictions, y)
+        accuracy    = convnet.accuracy(predictions, y)
+        optimize    = tf.train.AdamOptimizer(FLAGS.learning_rate)
+        minimize    = optimize.minimize(loss)
+        merged      = tf.merge_all_summaries()
+        log_test    = convnet._log_acc_loss(avr_acc, avr_loss)
+
+        timestamp = "/" + datetime.datetime.now().strftime('%b-%d-%I%M%p-%G')
+
+        with tf.Session() as sess:
+            train_writer = tf.train.SummaryWriter(FLAGS.log_dir + timestamp + '/train', sess.graph)
+            test_writer  = tf.train.SummaryWriter(FLAGS.log_dir + timestamp + '/test')
+            sess.run(tf.initialize_all_variables())
+
+            for batch_n in range(FLAGS.max_steps):
+                x_batch, y_batch = cifar10.train.next_batch(FLAGS.batch_size)
+
+                _, loss_val, acc_val, summary = sess.run([minimize, loss, accuracy, merged], {x:x_batch, y:y_batch})
+                #print(loss_val, ",    ", acc_val)
+
+                train_writer.add_summary(summary, batch_n)
+
+
+                if batch_n % 100 == 0 or batch_n == FLAGS.max_steps-1:
+                    x_test, y_test = cifar10.test.images, cifar10.test.labels
+                    test_loss_avr = 0
+                    test_acc_avr = 0
+                    for test_batch_n in range(int(len(x_test)/X_TEST_BATCH_SIZE)):
+                        test_start = X_TEST_BATCH_SIZE * test_batch_n
+                        test_end   = min(X_TEST_BATCH_SIZE * (test_batch_n+1), len(x_test)-1)
+                        x_test_batch = x_test[test_start:test_end]
+                        y_test_batch = y_test[test_start:test_end]
+                        summary, test_loss, test_accuracy = sess.run([merged, loss, accuracy], {x:x_test_batch, y:y_test_batch})
+
+                        test_acc_avr    += test_accuracy * (test_end-test_start) / len(x_test)
+                        test_loss_avr   += test_loss * (test_end-test_start) / len(x_test)
+
+                    #_, summary = sess.run([log_test, merged], {avr_acc:[test_acc_avr], avr_loss:[test_loss_avr]})
+                    #test_writer.add_summary(summary, batch_n)
+                    print("Iteration:", batch_n)
+                    print("Test loss:    ", test_loss_avr)
+                    print("Test accuracy:", test_acc_avr)
+                    print("-------------------------")
+
     ########################
     # END OF YOUR CODE    #
     ########################
-
 
 def train_siamese():
     """
