@@ -88,6 +88,7 @@ def train():
     # PUT YOUR CODE HERE  #
     ########################
     cifar10 = cifar10_utils.get_cifar10('cifar10/cifar-10-batches-py')
+    save_path = FLAGS.checkpoint_dir + "/model.chpt"
 
     with tf.name_scope("Model"):
         convnet = ConvNet()
@@ -104,43 +105,48 @@ def train():
         minimize    = optimize.minimize(loss)
         merged      = tf.merge_all_summaries()
         log_test    = convnet._log_acc_loss(avr_acc, avr_loss)
+        saver       = tf.train.Saver()
 
         timestamp = "/" + datetime.datetime.now().strftime('%b-%d-%I%M%p-%G')
 
         with tf.Session() as sess:
             train_writer = tf.train.SummaryWriter(FLAGS.log_dir + timestamp + '/train', sess.graph)
             test_writer  = tf.train.SummaryWriter(FLAGS.log_dir + timestamp + '/test')
-            sess.run(tf.initialize_all_variables())
 
-            for batch_n in range(FLAGS.max_steps):
-                x_batch, y_batch = cifar10.train.next_batch(FLAGS.batch_size)
+            if tf.gfile.Exists(save_path) and False:
+                saver.restore(sess, save_path)
+            else:
 
-                _, loss_val, acc_val, summary = sess.run([minimize, loss, accuracy, merged], {x:x_batch, y:y_batch})
-                #print(loss_val, ",    ", acc_val)
+                sess.run(tf.initialize_all_variables())
 
-                train_writer.add_summary(summary, batch_n)
+                for batch_n in range(FLAGS.max_steps):
+                    x_batch, y_batch = cifar10.train.next_batch(FLAGS.batch_size)
 
+                    # Training
+                    if batch_n % FLAGS.print_freq == 0 or batch_n == FLAGS.max_steps-1:
+                        _, train_loss, train_acc, summary_train = sess.run([minimize, loss, accuracy, merged], {x:x_batch, y:y_batch})
+                        train_writer.add_summary(summary_train, batch_n)
+                        print("Iteration:", batch_n)
+                        print("Train loss: ", train_loss )
+                        print("Train acc: ", train_acc )
+                    else:
+                        _ = sess.run([minimize], {x:x_batch, y:y_batch})
 
-                if batch_n % 100 == 0 or batch_n == FLAGS.max_steps-1:
-                    x_test, y_test = cifar10.test.images, cifar10.test.labels
-                    test_loss_avr = 0
-                    test_acc_avr = 0
-                    for test_batch_n in range(int(len(x_test)/X_TEST_BATCH_SIZE)):
-                        test_start = X_TEST_BATCH_SIZE * test_batch_n
-                        test_end   = min(X_TEST_BATCH_SIZE * (test_batch_n+1), len(x_test)-1)
-                        x_test_batch = x_test[test_start:test_end]
-                        y_test_batch = y_test[test_start:test_end]
-                        summary, test_loss, test_accuracy = sess.run([merged, loss, accuracy], {x:x_test_batch, y:y_test_batch})
+                    # Testing
+                    if batch_n % FLAGS.eval_freq == 0 or batch_n == FLAGS.max_steps-1:
+                        x_test, y_test = cifar10.test.images, cifar10.test.labels
 
-                        test_acc_avr    += test_accuracy * (test_end-test_start) / len(x_test)
-                        test_loss_avr   += test_loss * (test_end-test_start) / len(x_test)
+                        summary_test, test_loss, test_accuracy = sess.run([merged, loss, accuracy], {x:x_test, y:y_test})
 
-                    #_, summary = sess.run([log_test, merged], {avr_acc:[test_acc_avr], avr_loss:[test_loss_avr]})
-                    #test_writer.add_summary(summary, batch_n)
-                    print("Iteration:", batch_n)
-                    print("Test loss:    ", test_loss_avr)
-                    print("Test accuracy:", test_acc_avr)
-                    print("-------------------------")
+                        test_writer.add_summary(summary_test, batch_n)
+                        print("Test loss:    ", test_loss)
+                        print("Test accuracy:", test_accuracy)
+                        print("-------------------------")
+
+                    # Checkpoints
+                    if batch_n % FLAGS.checkpoint_freq == 0 or batch_n == FLAGS.max_steps-1:
+                        #saver.save(sess, save_path)
+                        print("SAVED MODEL")
 
     ########################
     # END OF YOUR CODE    #

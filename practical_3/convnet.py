@@ -24,7 +24,7 @@ class ConvNet(object):
                           output dimensions of the ConvNet.
         """
         self.n_classes = n_classes
-        self.weight_regularizer = tf.contrib.layers.regularizers.l2_regularizer(0.0)
+        self.weight_regularizer = tf.contrib.layers.regularizers.l2_regularizer(0.0001)
         self.initializer = tf.random_normal_initializer(mean=0.0, stddev=0.001 )
 
     def inference(self, x):
