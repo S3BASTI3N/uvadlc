@@ -64,9 +64,7 @@ class ConvNet(object):
 
             fc1 = self._fully_connected_layer(flatten, 1, 4096, 384, tf.nn.relu)
             fc2 = self._fully_connected_layer(fc1, 2, 384, 192, tf.nn.relu)
-            fc3 = self._fully_connected_layer(fc2, 3, 192, self.n_classes)
-
-            return fc3
+            logits = self._fully_connected_layer(fc2, 3, 192, self.n_classes)
 
             ########################
             # END OF YOUR CODE    #
@@ -83,8 +81,6 @@ class ConvNet(object):
             kernel = tf.get_variable("kernel", (filter_size[0], filter_size[1], filter_depth, output_depth),
                                             initializer=self.initializer,
                                             regularizer=self.weight_regularizer)
-
-            print( kernel.get_shape())
 
             if i == 1:
                 grid = self._put_kernels_on_grid(kernel, 8, 8)
@@ -140,7 +136,8 @@ class ConvNet(object):
 
     def _flatten_layer(self, x):
         with tf.variable_scope('flatten'):
-            return tf.contrib.layers.flatten(x, None)
+            return tf.identity(tf.contrib.layers.flatten(x, None), name="out")
+
 
     def _fully_connected_layer(self, x, i, input_size, output_size, activation=None):
         with tf.variable_scope('fc'+str(i)):
@@ -155,9 +152,9 @@ class ConvNet(object):
             mat = tf.add(tf.matmul(x, w),b)
 
             if activation:
-                return activation(mat)
+                return tf.identity(activation(mat), name='out')
             else:
-                return mat
+                return tf.identity(mat,name='out')
 
     def accuracy(self, logits, labels):
         """
