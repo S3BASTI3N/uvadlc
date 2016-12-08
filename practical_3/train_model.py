@@ -220,8 +220,14 @@ def train_siamese():
         predictions1 = siamese.inference(x_1)
         predictions2 = siamese.inference(x_2, True)
         loss        = siamese.loss(predictions1, predictions2, y, margin)
-        optimize    = tf.train.AdamOptimizer(FLAGS.learning_rate)
-        minimize    = optimize.minimize(loss)
+        #optimize    = tf.train.AdamOptimizer(FLAGS.learning_rate)
+
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        gvs = optimizer.compute_gradients(loss)
+        capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
+        minimize = optimizer.apply_gradients(capped_gvs)
+
+        #minimize    = optimize.minimize(loss)
         merged      = tf.merge_all_summaries()
         saver       = tf.train.Saver()
 
