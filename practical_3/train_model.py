@@ -301,34 +301,49 @@ def feature_extraction():
     # PUT YOUR CODE HERE  #
     ########################
     print("FEATURE EXTRACTION")
-    cifar10 = cifar10_utils.get_cifar10('cifar10/cifar-10-batches-py')
     save_path   = FLAGS.checkpoint_dir + "/model.chpt"
 
     if not tf.gfile.Exists(save_path):
         raise ValueError("you need to train the model first!")
 
     with tf.name_scope("Model"):
-        convnet = ConvNet()
-
         x = tf.placeholder("float", (None, 32, 32, 3))
-        predictions = convnet.inference(x)
-        fc1         = tf.get_default_graph().get_tensor_by_name("Model/ConvNet/fc1/out:0")
-        fc2         = tf.get_default_graph().get_tensor_by_name("Model/ConvNet/fc2/out:0")
-        flatten     = tf.get_default_graph().get_tensor_by_name("Model/ConvNet/flatten/out:0")
+        x2 = tf.placeholder("float", (None, 32, 32, 3))
+
+        if FLAGS.train_model == "siamese":
+            siamese = Siamese()
+            predictions1 = siamese.inference(x)
+            predictions2 = siamese.inference(x2, True)
+            l2 = tf.get_default_graph().get_tensor_by_name("Model/Convnet/fc2/out:0")
+            output_layers = [l2]
+            layer_names = ["L2 norm"]
+
+            cifar10 = cifar10_siamese_utils.get_cifar10('cifar10/cifar-10-batches-py')
+            x_1, x_2, y = cifar10.test.next_batch(FLAGS.batch_size)
+            feed_dict = {x:x_1, x2:x_2}
+
+        else:
+            convnet = ConvNet()
+            predictions = convnet.inference(x)
+            fc1         = tf.get_default_graph().get_tensor_by_name("Model/ConvNet/fc1/out:0")
+            fc2         = tf.get_default_graph().get_tensor_by_name("Model/ConvNet/fc2/out:0")
+            flatten     = tf.get_default_graph().get_tensor_by_name("Model/ConvNet/flatten/out:0")
+            output_layers = [flatten, fc1, fc2]
+            layer_names = ["flatten", "fc1", "fc2"]
+
+            cifar10 = cifar10_utils.get_cifar10('cifar10/cifar-10-batches-py')
+            x_test, y_test = cifar10.test.images[:5000], cifar10.test.labels[:5000]
+            feed_dict = {x:x_test}
+
 
         with tf.Session() as sess:
             saver   = tf.train.Saver()
             saver.restore(sess, save_path)
 
-            x_test, y_test = cifar10.test.images[:5000], cifar10.test.labels[:5000]
-
-            output_layers = [flatten, fc1, fc2]
-            layers = sess.run(output_layers, {x:x_test})
-            layer_names = ["flatten", "fc1", "fc2"]
-
+            layers = sess.run(output_layers, feed_dict)
 
             # TSNE
-            plt.figure(figsize=(30,10))
+            plt.figure(figsize=(len(output_layers)*10,10))
             labels = np.argmax(y_test,1)
             color_map = cm.jet(np.linspace(0, 1, 10))
 
