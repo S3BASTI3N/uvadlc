@@ -156,7 +156,7 @@ def create_dataset(source_data, num_tuples = 500, batch_size = 128, fraction_sam
     ########################
     # PUT YOUR CODE HERE  #
     ########################
-    raise NotImplementedError
+    #dset = Dataset(?, ?)
     ########################
     # END OF YOUR CODE    #
     ########################
@@ -229,18 +229,47 @@ class DataSet(object):
 
     Returns:
       x1: 4D numpy array of shape [batch_size, 32, 32, 3]
-      x1: 4D numpy array of shape [batch_size, 32, 32, 3]
+      x2: 4D numpy array of shape [batch_size, 32, 32, 3]
       labels: numpy array of shape [batch_size]
     """
 
     ########################
     # PUT YOUR CODE HERE  #
     ########################
-    raise NotImplementedError
+    anchor_image_index = random.randrange(self._num_examples)
+    anchor_image_label = np.argmax(self._labels[anchor_image_index])
+
+    x1 = np.array([self._images[anchor_image_index],]* batch_size)
+
+    same = 0
+    other = 0
+
+    x2 = np.zeros(x1.shape)
+    labels = np.zeros(batch_size)
+    while same+other < batch_size:
+        rand_i = random.randrange(self._num_examples)
+        rand_label = np.argmax(self._labels[rand_i])
+
+        if rand_label == anchor_image_label:
+            if same < batch_size*fraction_same:
+                x2[same+other,:,:,:] = self._images[rand_i]
+                labels[same+other]   = 1
+                same += 1
+        else:
+            if other < batch_size*(1.0-fraction_same):
+                x2[same+other,:,:,:] = self._images[rand_i]
+                labels[same+other]   = 0
+                other += 1
+
+    perm = np.arange(batch_size)
+    np.random.shuffle(perm)
+    x1      = x1[perm]
+    x2      = x2[perm]
+    labels  = labels[perm]
+
     ########################
     # END OF YOUR CODE    #
     ########################
-
     return x1, x2, labels
 
 def read_data_sets(data_dir, one_hot = True, validation_size = 0):
