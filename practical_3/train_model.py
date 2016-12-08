@@ -14,6 +14,7 @@ from convnet import ConvNet
 from siamese import Siamese
 import datetime
 import matplotlib
+import matplotlib.cm as cm
 matplotlib.use('Agg')
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
@@ -204,6 +205,7 @@ def train_siamese():
     ########################
     # PUT YOUR CODE HERE  #
     ########################
+    print("SIAMESE")
     cifar10 = cifar10_siamese_utils.get_cifar10('cifar10/cifar-10-batches-py')
     save_path = FLAGS.checkpoint_dir + "/siamese_model.chpt"
 
@@ -211,7 +213,7 @@ def train_siamese():
         channel1 = Siamese()
         channel2 = Siamese()
 
-        margin = 0.2
+        margin = 1
 
         x_1 = tf.placeholder("float", (None, 32, 32, 3), name="x1")
         x_2 = tf.placeholder("float", (None, 32, 32, 3), name="x2")
@@ -226,7 +228,6 @@ def train_siamese():
         saver       = tf.train.Saver()
 
         timestamp = "/" + datetime.datetime.now().strftime('%b-%d-%I%M%p-%G')
-        x1, x2, labels = cifar10.train.next_batch(FLAGS.batch_size)
 
         with tf.Session() as sess:
             train_writer = tf.train.SummaryWriter(FLAGS.log_dir + timestamp + '/siamese_train', sess.graph)
@@ -240,6 +241,7 @@ def train_siamese():
 
                 for batch_n in range(FLAGS.max_steps):
                     print("iteration:", batch_n)
+                    x1, x2, labels = cifar10.train.next_batch(FLAGS.batch_size)
 
                     # Training
                     if batch_n % FLAGS.print_freq == 0 or batch_n == FLAGS.max_steps-1:
@@ -293,6 +295,7 @@ def feature_extraction():
     ########################
     # PUT YOUR CODE HERE  #
     ########################
+    print("FEATURE EXTRACTION")
     cifar10 = cifar10_utils.get_cifar10('cifar10/cifar-10-batches-py')
     save_path   = FLAGS.checkpoint_dir + "/model.chpt"
 
@@ -312,7 +315,7 @@ def feature_extraction():
             saver   = tf.train.Saver()
             saver.restore(sess, save_path)
 
-            x_test, y_test = cifar10.test.images[:1000], cifar10.test.labels[:1000]
+            x_test, y_test = cifar10.test.images[:5000], cifar10.test.labels[:5000]
 
             output_layers = [flatten, fc1, fc2]
             layers = sess.run(output_layers, {x:x_test})
@@ -321,10 +324,14 @@ def feature_extraction():
 
             # TSNE
             plt.figure(figsize=(30,10))
+            labels = np.argmax(y_test,1)
+            color_map = cm.jet(np.linspace(0, 1, 10))
+
+            colors = color_map[labels]
             for i,layer in enumerate(layers):
                 plt.subplot(1,3,i+1)
                 tsne = TSNE(learning_rate=1000).fit_transform(layer)
-                plt.scatter(tsne[:,0], tsne[:,1], c=np.argmax(y_test,1), s =50)
+                plt.scatter(tsne[:,0], tsne[:,1], c=colors, s =50)
                 plt.title(layer_names[i])
             plt.savefig("TSNE.png")
 

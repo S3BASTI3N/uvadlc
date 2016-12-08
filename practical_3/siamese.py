@@ -143,7 +143,7 @@ class Siamese(object):
             mat = tf.add(tf.matmul(x, w),b)
 
             if dim >= 0:
-                 return tf.identity(activation(mat, dim), name='out')
+                 return tf.identity(activation(tf.nn.relu(mat), dim), name='out')
             if activation:
                 return tf.identity(activation(mat), name='out')
             else:
@@ -180,11 +180,10 @@ class Siamese(object):
         # PUT YOUR CODE HERE  #
         ########################
         label = tf.reshape(label, [128,1])
-        
-        d  = tf.pow(tf.sub(channel_1, channel_2), 2)
-        t1 = tf.matmul(label, d, transpose_a=True)
-        t2 = tf.matmul(tf.sub(1.0, label), tf.maximum(tf.sub(margin, d), 0), transpose_a=True)
-        loss = tf.reduce_mean(tf.add(t1, t2))
+        d = tf.sqrt(tf.reduce_sum(tf.square(tf.sub(channel_1, channel_2)), 1))
+        t1 = tf.mul(label, tf.square(d))
+        t2 = tf.mul(tf.sub(1.0, label), tf.maximum((margin - tf.square(d)), 0))
+        loss = tf.reduce_mean(tf.add(t1,t2))
         ########################
         # END OF YOUR CODE    #
         ########################
