@@ -1,2 +1,5 @@
-model_checkpoint_path: "model.chpt"
-all_model_checkpoint_paths: "model.chpt"
+model_checkpoint_path: "siamese_model.chpt14999"
+all_model_checkpoint_paths: "siamese_model.chpt0"
+all_model_checkpoint_paths: "siamese_model.chpt5000"
+all_model_checkpoint_paths: "siamese_model.chpt10000"
+all_model_checkpoint_paths: "siamese_model.chpt14999"
