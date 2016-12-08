@@ -222,7 +222,7 @@ def train_siamese():
         loss        = siamese.loss(predictions1, predictions2, y, margin)
         #optimize    = tf.train.AdamOptimizer(FLAGS.learning_rate)
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
         gvs = optimizer.compute_gradients(loss)
         capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
         minimize = optimizer.apply_gradients(capped_gvs)
