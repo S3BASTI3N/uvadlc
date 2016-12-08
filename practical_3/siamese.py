@@ -143,7 +143,7 @@ class Siamese(object):
             mat = tf.add(tf.matmul(x, w),b)
 
             if dim >= 0:
-                 return tf.identity(activation(tf.nn.relu(mat), dim), name='out')
+                return tf.identity(activation(tf.nn.relu(mat), dim), name='out')
             if activation:
                 return tf.identity(activation(mat), name='out')
             else:
