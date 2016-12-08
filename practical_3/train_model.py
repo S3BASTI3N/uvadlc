@@ -210,18 +210,16 @@ def train_siamese():
     save_path = FLAGS.checkpoint_dir + "/siamese_model.chpt"
 
     with tf.name_scope("Model"):
-        channel1 = Siamese()
-        channel2 = Siamese()
-
+        siamese = Siamese()
         margin = 1
 
         x_1 = tf.placeholder("float", (None, 32, 32, 3), name="x1")
         x_2 = tf.placeholder("float", (None, 32, 32, 3), name="x2")
         y = tf.placeholder("float", (None), name="y")
 
-        predictions1 = channel1.inference(x_1)
-        predictions2 = channel2.inference(x_2, True)
-        loss        = channel1.loss(predictions1, predictions2, y, margin)
+        predictions1 = siamese.inference(x_1)
+        predictions2 = siamese.inference(x_2, True)
+        loss        = siamese.loss(predictions1, predictions2, y, margin)
         optimize    = tf.train.AdamOptimizer(FLAGS.learning_rate)
         minimize    = optimize.minimize(loss)
         merged      = tf.merge_all_summaries()

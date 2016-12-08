@@ -45,7 +45,7 @@ class Siamese(object):
 
         https://www.tensorflow.org/versions/r0.11/how_tos/variable_scope/index.html
         """
-        with tf.variable_scope('ConvNet') as conv_scope:
+        with tf.variable_scope('ConvNet', reuse=reuse) as conv_scope:
             ########################
             # PUT YOUR CODE HERE  #
             ########################
