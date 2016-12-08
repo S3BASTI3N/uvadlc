@@ -222,7 +222,7 @@ def train_siamese():
         loss        = siamese.loss(predictions1, predictions2, y, margin)
         #optimize    = tf.train.AdamOptimizer(FLAGS.learning_rate)
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.1*FLAGS.learning_rate)
         gvs = optimizer.compute_gradients(loss)
         capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
         minimize = optimizer.apply_gradients(capped_gvs)
@@ -266,12 +266,13 @@ def train_siamese():
                         test_writer.add_summary(summary_test, batch_n)
                         print("Test loss:    ", test_loss)
                         print("-------------------------")
+                    '''
 
                     # Checkpoints
                     if batch_n % FLAGS.checkpoint_freq == 0 or batch_n == FLAGS.max_steps-1:
-                        #saver.save(sess, save_path)
+                        saver.save(sess, save_path+str(batch_n))
                         print("SAVED MODEL")
-                    '''
+
 
 
 
