@@ -1,0 +1,5 @@
+model_checkpoint_path: "model.chpt-14999"
+all_model_checkpoint_paths: "model.chpt-0"
+all_model_checkpoint_paths: "model.chpt-5000"
+all_model_checkpoint_paths: "model.chpt-10000"
+all_model_checkpoint_paths: "model.chpt-14999"
