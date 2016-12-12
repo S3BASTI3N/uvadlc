@@ -180,10 +180,11 @@ class Siamese(object):
         # PUT YOUR CODE HERE  #
         ########################
         label = tf.reshape(label, [128,1])
-        d = tf.sqrt(tf.reduce_sum(tf.square(tf.sub(channel_1, channel_2)), 1))
+        d = tf.sqrt(tf.reduce_sum(tf.square(tf.sub(channel_1, channel_2)), 1) + 0.0001)
         t1 = tf.mul(label, tf.square(d))
-        t2 = tf.mul(tf.sub(1.0, label), tf.maximum((margin - tf.square(d)), 0))
+        t2 = tf.mul(tf.sub(1.0, label), tf.maximum(tf.sub(margin, tf.square(d)), 0))
         loss = tf.reduce_mean(tf.add(t1,t2))
+        tf.scalar_summary('Loss', loss)
         ########################
         # END OF YOUR CODE    #
         ########################

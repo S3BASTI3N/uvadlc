@@ -209,15 +209,16 @@ def train_siamese():
     cifar10 = cifar10_siamese_utils.get_cifar10('cifar10/cifar-10-batches-py')
     save_path = FLAGS.checkpoint_dir + "/siamese_model.chpt"
 
-    with tf.name_scope("Model"):
+    with tf.variable_scope("Model") as model_scope:
         siamese = Siamese()
-        margin = 1
+        margin = 0.2
 
         x_1 = tf.placeholder("float", (None, 32, 32, 3), name="x1")
         x_2 = tf.placeholder("float", (None, 32, 32, 3), name="x2")
         y = tf.placeholder("float", (None), name="y")
 
         predictions1 = siamese.inference(x_1)
+        model_scope.reuse_variables()
         predictions2 = siamese.inference(x_2, True)
         loss        = siamese.loss(predictions1, predictions2, y, margin)
         #optimize    = tf.train.AdamOptimizer(FLAGS.learning_rate)
@@ -314,7 +315,7 @@ def feature_extraction():
             if FLAGS.train_model == "siamese":
                 siamese = Siamese()
                 predictions = siamese.inference(x)
-                save_path   = FLAGS.checkpoint_dir + "/siamese_model.chpt14999"
+                save_path   = FLAGS.checkpoint_dir + "/siamese/model.chpt-45000"
                 saver       = tf.train.Saver()
                 saver.restore(sess, save_path)
 
