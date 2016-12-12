@@ -8,6 +8,9 @@ import os
 import tensorflow as tf
 import numpy as np
 
+import cifar10_utils
+from vgg import VGG
+
 LEARNING_RATE_DEFAULT = 1e-4
 BATCH_SIZE_DEFAULT = 128
 MAX_STEPS_DEFAULT = 15000
@@ -36,7 +39,8 @@ def train_step(loss):
     ########################
     # PUT YOUR CODE HERE  #
     ########################
-    raise NotImplementedError
+    optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate)
+    train_op = optimizer.minimize(loss)
     ########################
     # END OF YOUR CODE    #
     ########################
@@ -72,7 +76,44 @@ def train():
     ########################
     # PUT YOUR CODE HERE  #
     ########################
-    raise NotImplementedError
+    cifar10 = cifar10_utils.get_cifar10(FLAGS.data_dir)
+    x_test, y_test = cifar10.test.images, cifar10.test.labels
+
+    with tf.variable_scope("train") as scope:
+        X = tf.placeholder(tf.float32, shape=(None, None, None, 3))
+        Y = tf.placeholder(tf.float32, shape=(None, 10))
+
+        vgg = VGG()
+        logits, assign_op   = vgg.inference(X)
+        accuracy            = vgg.accuracy(logits, Y)
+        loss                = vgg.loss(logits, Y)
+        minimize            = train_step(loss)
+        merged              = tf.merge_all_summaries()
+
+        scope.reuse_variables()
+        saver = tf.train.Saver()
+
+        with tf.Session() as sess:
+            train_writer = tf.train.SummaryWriter(FLAGS.log_dir + '/train_VGG', sess.graph)
+            test_writer = tf.train.SummaryWriter(FLAGS.log_dir + '/test_VGG')
+
+            sess.run([tf.initialize_all_variables(), assign_op])
+
+            for batch_n in range(FLAGS.max_steps):
+                x_batch, y_batch = cifar10.train.next_batch(FLAGS.batch_size)
+                summary, accuracy_val, _ = sess.run([merged, accuracy, minimize], {X: x_batch, Y: y_batch}) #, training: True})
+
+                if (batch_n % FLAGS.print_freq == 0 or FLAGS.max_steps - 1 == batch_n ):
+                    train_writer.add_summary(summary, batch_n)
+                    print("Train accuracy:", accuracy_val)
+
+                if (batch_n % FLAGS.eval_freq == 0 or FLAGS.max_steps - 1 == batch_n ):
+                    summary, accuracy_val = sess.run([merged, accuracy], {X: x_test, Y: y_test}) #, training: False})
+                    test_writer.add_summary(summary, batch_n)
+                    print("Test accuracy:", accuracy_val)
+
+                if (batch_n % FLAGS.checkpoint_freq == 0):
+                    saver.save(sess, FLAGS.checkpoint_dir + '/VGG_' + str(batch_n))
     ########################
     # END OF YOUR CODE    #
     ########################
